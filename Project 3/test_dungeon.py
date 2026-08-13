@@ -1,4 +1,5 @@
 import pytest
+
 from dungeon import (
     move_coords,
     make_monster,
