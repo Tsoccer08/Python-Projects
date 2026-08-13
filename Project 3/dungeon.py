@@ -37,18 +37,22 @@ def make_room(allow_boss):
 
     # Place door only if there is no boss
     door_pos = None
+
     if boss_pos is None:
         border = []
+
         for i in range(SIZE):
             border.append((i, 0))
             border.append((i, SIZE - 1))
             border.append((0, i))
             border.append((SIZE - 1, i))
+
         border = [p for p in border if p != start]
 
         door_pos = random.choice(border)
         dx, dy = door_pos
         grid[dy][dx] = "D"
+
         if door_pos in empties:
             empties.remove(door_pos)
 
@@ -73,10 +77,12 @@ def make_room(allow_boss):
 def move_coords(px, py, d):
     dx = (d == "d") - (d == "a")
     dy = (d == "s") - (d == "w")
+
     nx, ny = px + dx, py + dy
 
     if 0 <= nx < SIZE and 0 <= ny < SIZE:
         return nx, ny
+
     return px, py
 
 
@@ -88,6 +94,7 @@ def make_monster(is_boss):
             "hp": random.randint(30, 45),
             "atk": random.randint(6, 10)
         }
+
     return {
         "name": "Monster",
         "hp": random.randint(10, 16),
@@ -104,6 +111,7 @@ def combat_step(player, monster, action):
     if action == "a":
         m["hp"] -= p["atk"]
         events.append(("player_hit", p["atk"]))
+
         if m["hp"] > 0:
             p["hp"] -= m["atk"]
             events.append(("monster_hit", m["atk"]))
@@ -114,7 +122,6 @@ def combat_step(player, monster, action):
         events.append(("run", dmg))
 
     return p, m, events
-
 
 
 # Potion effect
@@ -129,14 +136,17 @@ def apply_potion_effect(player, potion):
 # Grid update helper
 def player_on_grid(grid, old_pos, new_pos):
     g = [row[:] for row in grid]
+
     ox, oy = old_pos
     nx, ny = new_pos
+
     g[oy][ox] = "."
     g[ny][nx] = "P"
+
     return g
 
 
-# main game loop
+# Main game loop
 def main():
     # Initialize random number generator
     random.seed()
@@ -149,16 +159,21 @@ def main():
     # Allow the player to choose a potion from inventory
     def choose_potion(pots):
         print("\nYour potions:")
+
         for i, p in enumerate(pots):
             print(
-                f"{i+1}. {p['name']} "
+                f"{i + 1}. {p['name']} "
                 f"(+{p['hp']} HP, +{p['atk']} ATK)"
             )
+
         sel = input("Choose (0 to cancel): ")
+
         if sel.isdigit():
             num = int(sel)
+
             if 1 <= num <= len(pots):
                 return num - 1
+
         return -1
 
     # Randomly decide which floor will contain the boss
@@ -168,7 +183,13 @@ def main():
     # Initialize starting floor, room, and player stats
     floor = 1
     grid, (px, py), _, _ = make_room(False)
-    player = {"hp": 30, "atk": 6, "potions": []}
+
+    player = {
+        "hp": 30,
+        "atk": 6,
+        "potions": []
+    }
+
     running = True
 
     # Run the game until the player quits, wins, or dies
@@ -177,7 +198,9 @@ def main():
             "\nLEGEND: P=You  M=Monster  B=Boss  "
             "D=Door  T=Treasure  .=Empty\n"
         )
+
         print_grid(grid)
+
         print(
             f"\nFloor {floor} | HP {player['hp']} | "
             f"ATK {player['atk']} | "
@@ -186,8 +209,10 @@ def main():
 
         # Get and validate movement or action input
         cmd = input("W A S D | U = potion | Q = quit: ").lower()
+
         while cmd not in ["w", "a", "s", "d", "u", "q"]:
             print("You entered the wrong key.")
+
             cmd = input(
                 "W A S D | U = potion | Q = quit: "
             ).lower()
@@ -203,13 +228,18 @@ def main():
                 print("No potions.")
             else:
                 idx = choose_potion(player["potions"])
+
                 if idx >= 0:
                     pot = player["potions"][idx]
+
                     player = apply_potion_effect(player, pot)
+
                     player["potions"] = [
-                        p for i, p in enumerate(player["potions"])
+                        p
+                        for i, p in enumerate(player["potions"])
                         if i != idx
                     ]
+
                     print(
                         f"You used {pot['name']}: "
                         f"+{pot['hp']} HP, "
@@ -226,9 +256,11 @@ def main():
                 # Handle moving through a door to the next floor
                 if tile == "D":
                     floor += 1
+
                     grid, (px, py), _, _ = make_room(
                         floor == boss_floor
                     )
+
                     print(
                         f"\nYou pass through the door "
                         f"to Floor {floor}."
@@ -237,21 +269,31 @@ def main():
                 # Handle picking up a treasure potion
                 elif tile == "T":
                     pot = random.choice(POTION_TYPES).copy()
+
                     player["potions"].append(pot)
+
                     print(
                         f"\nYou picked up a potion: "
-                        f"+{pot['hp']} HP, +{pot['atk']} ATK"
+                        f"+{pot['hp']} HP, "
+                        f"+{pot['atk']} ATK"
                     )
+
                     grid[ny][nx] = "."
+
                     grid = player_on_grid(
-                        grid, (px, py), (nx, ny)
+                        grid,
+                        (px, py),
+                        (nx, ny)
                     )
+
                     px, py = nx, ny
 
                 # Handle combat with a monster or boss
                 elif tile in ("M", "B"):
                     combat_origin = (px, py)
+
                     monster = make_monster(tile == "B")
+
                     print(
                         f"\nA {monster['name']} appears! "
                         f"HP {monster['hp']} "
@@ -259,8 +301,10 @@ def main():
                     )
 
                     fight = True
+
                     while (
-                        fight and player["hp"] > 0
+                        fight
+                        and player["hp"] > 0
                         and monster["hp"] > 0
                     ):
                         print(
@@ -268,6 +312,7 @@ def main():
                             f"ATK {player['atk']} | "
                             f"Enemy HP {monster['hp']}"
                         )
+
                         act = input(
                             "(A)ttack (P)otion (R)un: "
                         ).lower()
@@ -280,17 +325,23 @@ def main():
                                 idx = choose_potion(
                                     player["potions"]
                                 )
+
                                 if idx >= 0:
                                     pot = player["potions"][idx]
+
                                     player = apply_potion_effect(
-                                        player, pot
+                                        player,
+                                        pot
                                     )
+
                                     player["potions"] = [
-                                        p for i, p in enumerate(
+                                        p
+                                        for i, p in enumerate(
                                             player["potions"]
                                         )
                                         if i != idx
                                     ]
+
                                     print(
                                         f"You used {pot['name']}: "
                                         f"+{pot['hp']} HP, "
@@ -300,16 +351,22 @@ def main():
                         # Handle attacking or running
                         elif act == "a" or act == "r":
                             player, monster, events = combat_step(
-                                player, monster, act
+                                player,
+                                monster,
+                                act
                             )
 
                             for etype, val in events:
                                 if etype == "player_hit":
-                                    print(f"You hit for {val}.")
+                                    print(
+                                        f"You hit for {val}."
+                                    )
+
                                 if etype == "monster_hit":
                                     print(
                                         f"Enemy hits you for {val}."
                                     )
+
                                 if etype == "run":
                                     print(
                                         f"You fled and took "
@@ -322,6 +379,7 @@ def main():
                                     (px, py),
                                     combat_origin
                                 )
+
                                 px, py = combat_origin
                                 fight = False
 
@@ -333,7 +391,9 @@ def main():
                                         pot = random.choice(
                                             POTION_TYPES
                                         ).copy()
+
                                         player["potions"].append(pot)
+
                                         print(
                                             "The monster dropped "
                                             f"a potion! "
@@ -342,11 +402,13 @@ def main():
                                         )
 
                                     grid[ny][nx] = "."
+
                                     grid = player_on_grid(
                                         grid,
                                         (px, py),
                                         (nx, ny)
                                     )
+
                                     px, py = nx, ny
                                     fight = False
 
@@ -355,12 +417,14 @@ def main():
                                             "\nYou defeated "
                                             "the Boss! YOU WIN!"
                                         )
+
                                         running = False
 
                                 elif player["hp"] <= 0:
                                     print(
                                         "\nYou died. Game Over."
                                     )
+
                                     running = False
                                     fight = False
 
@@ -371,8 +435,11 @@ def main():
                 # Handle moving onto an empty tile
                 elif tile == ".":
                     grid = player_on_grid(
-                        grid, (px, py), (nx, ny)
+                        grid,
+                        (px, py),
+                        (nx, ny)
                     )
+
                     px, py = nx, ny
 
     # End-of-game message
